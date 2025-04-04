@@ -8,7 +8,7 @@ documentation = "https://tiny-http.github.io/tiny-http/tiny_http/index.html"
 keywords = ["http", "server", "web"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/tiny-http/tiny-http"
-edition = "2018"
+edition = "2021"
 rust-version = "1.57"
 
 [features]
@@ -25,7 +25,9 @@ httpdate = "1.0.2"
 
 log = { version = "0.4.4", optional = true }
 openssl = { version = "0.10", optional = true }
-rustls = { version = "0.20", optional = true }
+#rustls = { version = "0.20", optional = true }
+rustls = { version = "0.23", features = ["std"], default-features = false, optional = true }
+#rustls-rustcrypto = "0.0.2-alpha"
 rustls-pemfile = { version = "0.2.1", optional = true }
 zeroize = { version = "1", optional = true }
 native-tls = { version = "0.2", optional = true }
