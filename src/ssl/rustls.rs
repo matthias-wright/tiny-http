@@ -1,5 +1,7 @@
 use crate::connection::Connection;
 use crate::util::refined_tcp_stream::Stream as RefinedStream;
+use rustls::pki_types::pem::PemObject;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use std::error::Error;
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddr};
@@ -69,36 +71,19 @@ impl RustlsContext {
         certificates: Vec<u8>,
         private_key: Zeroizing<Vec<u8>>,
     ) -> Result<Self, Box<dyn Error + Send + Sync>> {
-        let certificate_chain: Vec<rustls::Certificate> =
-            rustls_pemfile::certs(&mut certificates.as_slice())?
-                .into_iter()
-                .map(|bytes| rustls::Certificate(bytes))
-                .collect();
+        let certificate = CertificateDer::from(certificates);
 
-        if certificate_chain.is_empty() {
+        if certificate.is_empty() {
             return Err("Couldn't extract certificate chain from config.".into());
         }
-
-        let private_key = rustls::PrivateKey({
-            let pkcs8_keys = rustls_pemfile::pkcs8_private_keys(
-                &mut private_key.clone().as_slice(),
-            )
-            .expect("file contains invalid pkcs8 private key (encrypted keys are not supported)");
-
-            if let Some(pkcs8_key) = pkcs8_keys.first() {
-                pkcs8_key.clone()
-            } else {
-                let rsa_keys = rustls_pemfile::rsa_private_keys(&mut private_key.as_slice())
-                    .expect("file contains invalid rsa private key");
-                rsa_keys[0].clone()
-            }
-        });
+        let private_key = PrivatePkcs8KeyDer::from(private_key.as_slice());
+        let private_key = PrivateKeyDer::from(private_key).clone_key();
 
         let tls_conf =
             rustls::ServerConfig::builder_with_provider(Arc::new(rustls_rustcrypto::provider()))
                 .with_safe_default_protocol_versions()?
                 .with_no_client_auth()
-                .with_single_cert(certificate_chain, private_key)?;
+                .with_single_cert(vec![certificate], private_key)?;
 
         Ok(Self(Arc::new(tls_conf)))
     }
