@@ -76,7 +76,7 @@ impl RustlsContext {
         if certificate.is_empty() {
             return Err("Couldn't extract certificate chain from config.".into());
         }
-        let private_key = PrivatePkcs8KeyDer::from(private_key.as_slice());
+        let private_key = PrivatePkcs1KeyDer::from(private_key.as_slice());
         let private_key = PrivateKeyDer::from(private_key).clone_key();
 
         let tls_conf =
